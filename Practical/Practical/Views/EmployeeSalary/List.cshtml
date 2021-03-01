@@ -1,0 +1,147 @@
+﻿@{
+    ViewBag.Title = "List Salary";
+}
+
+<h2>Salary Master</h2>
+<hr />
+
+<p>
+    @Html.ActionLink("Add Salary", "Create")
+</p>
+<br />
+
+<table style="width:100%">
+    <tr>
+        <td style="width:15%">Department : </td>
+        <td style="width:25%">@Html.DropDownList("Department", ViewData["Department"] as List<SelectListItem>, "--Select--", new { @class = "form-control" })</td>
+        <td style="width:15%;padding-left:7%">Employee : </td>
+        <td style="width:25%">@Html.DropDownList("Employee", ViewData["Employee"] as List<SelectListItem>, "--Select--", new { @class = "form-control" })</td>
+        <td style="width:20%">&nbsp;</td>
+    </tr>
+    <tr><td colspan="4">&nbsp;</td></tr>
+    <tr>
+        <td style="width:15%;">From Date :</td>
+        <td style="width:25%"><input id="FromDate" type="text" name="FromDate" class="form-control datepicker" /></td>
+        <td style="width:15%;padding-left:7%">To Date :</td>
+        <td style="width:25%"><input id="ToDate" type="text" name="ToDate" class="form-control datepicker" /></td>
+        <td style="width:20%"><input type="submit" value="Search Data" onclick="BindData()" /></td>
+    </tr>
+</table>
+
+<span id="l_Msg" style="color:red"></span>
+<span id="l_Msg1" style="color:red"></span>
+<table class="table" id="tbl_grid">
+</table>
+
+
+<script src="~/Scripts/jquery-1.12.4.min.js"></script>
+<link href="~/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+<script src="~/Scripts/jquery-ui-1.12.1.js"></script>
+<script src="~/Scripts/datatables.min.js"></script>
+<link href="~/Content/Jquery.Datatable.css" rel="stylesheet" />
+
+<script>
+    var $j = jQuery.noConflict();
+
+    function DateValidation() {
+        var FromDate = document.getElementById("FromDate").value
+        var ToDate = document.getElementById("ToDate").value
+
+        if (FromDate == "" && ToDate == "") {
+            return true;
+        }
+        else if (!FromDate.match(/^(0[1-9]|[12][0-9]|3[01])[\- \/.](?:(0[1-9]|1[012])[\- \/.](19|20)[0-9]{2})$/)) {
+            alert('Please Enter Valid From Date');
+            return false;
+        }
+        else if (!ToDate.match(/^(0[1-9]|[12][0-9]|3[01])[\- \/.](?:(0[1-9]|1[012])[\- \/.](19|20)[0-9]{2})$/)) {
+            alert('Please Enter Valid To Date');
+            return false;
+        }
+
+        return true;
+    }
+
+    function BindData() {
+        $j("#l_Msg").html("");
+        $j("#tbl_grid").empty();
+
+        var validation = DateValidation();
+
+        if (validation) {
+            $j.ajax({
+                async: false,
+                type: "Post",
+                url: "/Practical/EmployeeSalary/JsonList",
+                data: "{'Employee':'" + $j("#Employee").val() + "','Department':'" + $j("#Department").val() + "','FromDate':'" + $j("#FromDate").val() + "','ToDate':'" + $j("#ToDate").val() + "'}",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (Result) {
+                    if (Result.Count != 0) {
+                        BindDataTable(Result.Data);
+                    }
+                    else {
+                        $j("#l_Msg").html("No Data Found ||");
+                    }
+                },
+                error: function (response) {
+                    alert(response.responseText);
+                }
+            });
+        }
+    }
+
+    function BindDataTable(Result) {
+        var table = $j('#tbl_grid').DataTable({
+            searching: false,
+            paging: false,
+            info: false,
+            destroy: true,
+            ordering: false,
+            deferRender: true,
+            data: Result,
+            columns: [
+                {
+                    "title": "Sr.No.",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Emp_Id",
+                },
+                {
+                    "title": "Name",
+                    "class": "bdr_v text_align_center",
+                    "data": "EmployeeName",
+                },
+                {
+                    "title": "Department",
+                    "class": "bdr_v text_align_center",
+                    "data": "Department",
+                },
+                {
+                    "title": "Average Salary",
+                    "class": "bdr_v text_align_center",
+                    "data": "Average",
+                },
+                {
+                    "title": "",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Emp_Id",
+                    "render": function (data, type, full) {
+                        return '<a href="/Practical/EmployeeSalary/Detail?Id=' + data + '&Department=' + full["Department"] + '&EmployeeName=' + full["EmployeeName"] + '&FromDate=' + $j("#FromDate").val() + '&ToDate=' + $j("#ToDate").val() + '">View</a>'
+                    },
+                },
+            ],
+            "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+                $j("td:first", nRow).html(iDisplayIndex + 1);
+                return nRow;
+            },
+        });
+    }
+
+    $j(document).ready(function () {
+        $j(".datepicker").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            dateFormat: "dd/mm/yy"
+        });
+    })
+</script>

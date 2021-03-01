@@ -1,0 +1,312 @@
+---------DataBase---------------------------
+
+Create DataBase Practical
+
+---------Table------------------------------
+
+USE [Practical]
+GO
+
+
+CREATE TABLE [dbo].[Employee](
+	[Emp_Id] [int] IDENTITY(1,1) NOT NULL,
+	[Emp_Name] [nvarchar](50) NOT NULL,
+	[Emp_Department] [nvarchar](30) NOT NULL,
+	[Emp_DOB] [datetime] NOT NULL,
+	[Emp_Status] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Emp_Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+CREATE TABLE [dbo].[EmployeeSalary](
+	[Es_Id] [int] IDENTITY(1,1) NOT NULL,
+	[Es_Emp_Id] [int] NOT NULL,
+	[Es_Salary] [numeric](18, 2) NOT NULL,
+	[Es_Date] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Es_Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[EmployeeSalary]  WITH CHECK ADD  CONSTRAINT [Fk_Es_Emp_Id] FOREIGN KEY([Es_Emp_Id])
+REFERENCES [dbo].[Employee] ([Emp_Id])
+GO
+
+ALTER TABLE [dbo].[EmployeeSalary] CHECK CONSTRAINT [Fk_Es_Emp_Id]
+GO
+
+---------------------SP---------------------------
+USE [Practical]
+GO
+
+CREATE Procedure [dbo].[ListEmployee]
+	@Department Nvarchar(30)
+As
+Begin
+	Select
+		Emp_Id
+		,Emp_Name
+		,Emp_Department
+		,Emp_DOB
+		,Emp_Status
+		,Concat(Round(DateDiff(Month, Emp_DOB, GETDATE() + 1)/12,0),' - Years , ',Round(DateDiff(Month, Emp_DOB, GETDATE() + 1) % 12,0),' - Months') As Age
+	From Employee
+	Where @Department = ''
+	Or Emp_Department = @Department
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[DeleteEmployee]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[DeleteEmployee]
+	@Id Int
+As
+Begin
+	IF 0 = (Select Count(Es_Id) From EmployeeSalary Where Es_Emp_Id = @Id)
+	Begin
+		Delete From Employee Where Emp_Id = @Id
+	End
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[FindEmployee]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[FindEmployee]
+(
+	@Id Int
+)
+As
+Begin
+	Select
+		Emp_Id
+		,Emp_Name
+		,Emp_Department
+		,Emp_DOB
+		,Emp_Status
+	From Employee
+	Where Emp_Id = @Id
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[UpdateEmployee]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[UpdateEmployee]
+	@Emp_Id Int
+	,@Emp_Name Nvarchar(50)
+	,@Emp_Department Nvarchar(30)
+	,@Emp_DOB DateTime
+	,@Emp_Status Int
+As
+Begin
+	Update Employee
+	Set
+	Emp_Name = @Emp_Name
+	,Emp_Department = @Emp_Department
+	,Emp_DOB = @Emp_DOB
+	,Emp_Status = @Emp_Status
+	Where Emp_Id = @Emp_Id
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[CheckEmployee]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[CheckEmployee]
+(
+	@Name Nvarchar(100),
+	@Id Int
+)
+As
+Begin
+	Declare @Count Int = 0
+	Select 
+		 @Count = Count(Emp_Id)
+	From Employee
+	Where Emp_Name = @Name
+	AND Emp_Id <> @Id
+
+	Select @Count
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[CreateEmployee]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[CreateEmployee]
+(
+	@Emp_Name Nvarchar(50)
+	,@Emp_Department Nvarchar(30)
+	,@Emp_DOB DateTime
+	,@Emp_Status Int
+)
+As
+Begin
+	Insert Into Employee
+	(Emp_Name,Emp_Department,Emp_DOB,Emp_Status)
+	Values
+	(@Emp_Name, @Emp_Department,@Emp_DOB,@Emp_Status)
+	
+	Select SCOPE_IDENTITY()
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[CheckEmployeeSalary]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+Create Procedure [dbo].[CheckEmployeeSalary]
+(
+	@Date DateTime,
+	@Id Int
+)
+As
+Begin
+	Declare @Count Int = 0
+	Select 
+		 @Count = Count(Es_Id)
+	From EmployeeSalary
+	Where Es_Date = @Date
+	AND Es_Emp_Id = @Id
+
+	Select @Count
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[CreateEmployeeSalary]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+Create Procedure [dbo].[CreateEmployeeSalary]
+(
+	@Es_Emp_Id int
+	,@Es_Salary Numeric(18,0)
+	,@Es_Date DateTime
+)
+As
+Begin
+	Insert Into EmployeeSalary
+	(Es_Emp_Id,Es_Salary,Es_Date)
+	Values
+	(@Es_Emp_Id, @Es_Salary,@Es_Date)
+	
+	Select SCOPE_IDENTITY()
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[ListEmployeeSalary]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[ListEmployeeSalary]
+	@FromDate Varchar(10)
+	,@ToDate Varchar(10)
+	,@EmpId Int
+	,@Department Nvarchar(30)
+As
+Begin
+Select  
+	Sum(Es_Salary) / Count(Es_Id) As Average
+	,Emp_Name
+	,Emp_Id
+	,Emp_Department
+From Employee
+Inner Join EmployeeSalary On Emp_Id = Es_Emp_Id
+Where ((@FromDate = '') OR (Convert(DateTime,Es_Date,103) = Convert(DateTime,@FromDate,103)))
+AND ((@ToDate = '') OR (Convert(DateTime,Es_Date,103) = Convert(DateTime,@ToDate,103)))
+AND ((@EmpId = 0) OR (Emp_Id = @EmpId))
+AND ((@Department = '') OR (Emp_Department = @Department))
+Group By Emp_Name,Emp_Id,Emp_Department
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[EmployeeSalaryDetail]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE Procedure [dbo].[EmployeeSalaryDetail]
+	@FromDate Varchar(10)
+	,@ToDate Varchar(10)
+	,@EmpId Int
+As
+Begin
+Select  
+	Es_Id
+	,Es_Emp_Id
+	,Es_Salary
+	,Es_Date
+From EmployeeSalary 
+Where ((@FromDate = '') OR (Convert(DateTime,Es_Date,103) = Convert(DateTime,@FromDate,103)))
+AND ((@ToDate = '') OR (Convert(DateTime,Es_Date,103) = Convert(DateTime,@ToDate,103)))
+AND Es_Emp_Id = @EmpId
+End
+GO
+
+/****** Object:  StoredProcedure [dbo].[DeleteEmployeeSalary]    Script Date: 2021-03-01 23:21:07 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+Create Procedure [dbo].[DeleteEmployeeSalary]
+	@Id Int
+As
+Begin
+	Delete From EmployeeSalary Where Es_Id = @Id
+End
+GO
+
+
+
+
+

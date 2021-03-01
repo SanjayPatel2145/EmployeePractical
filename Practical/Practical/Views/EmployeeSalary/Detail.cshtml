@@ -1,0 +1,170 @@
+﻿@{
+    ViewBag.Title = "Detail Salary";
+}
+
+<h2>Salary Master</h2>
+<hr />
+
+<p>
+    @Html.ActionLink("Add Salary", "Create")
+</p>
+<br />
+
+<table style="width:100%">
+    <tr>
+        <td style="width:15%">Department : </td>
+        <td style="width:25%"><span id="Department"></span></td>
+        <td style="width:15%;padding-left:7%">Employee : </td>
+        <td style="width:25%"><span id="Employee"></span></td>
+        <td style="width:20%">&nbsp;</td>
+    </tr>
+    <tr><td colspan="4">&nbsp;</td></tr>
+    <tr>
+        <td style="width:15%;">From Date :</td>
+        <td style="width:25%"><span id="FromDate"></span></td>
+        <td style="width:15%;padding-left:7%">To Date :</td>
+        <td style="width:25%"><span id="ToDate"></span></td>
+        <td style="width:20%"></td>
+    </tr>
+</table>
+
+<span id="l_Msg" style="color:red"></span>
+<span id="l_Msg1" style="color:red"></span>
+
+<table class="table" id="tbl_grid">
+</table>
+
+
+<div>
+    @Html.ActionLink("Back to List", "List")
+</div>
+
+<script src="~/Scripts/jquery-1.12.4.min.js"></script>
+<link href="~/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+<script src="~/Scripts/jquery-ui-1.12.1.js"></script>
+<script src="~/Scripts/datatables.min.js"></script>
+<link href="~/Content/Jquery.Datatable.css" rel="stylesheet" />
+
+<script>
+    var $j = jQuery.noConflict();
+
+    $j(document).ready(function () {
+        BindData();
+    });
+
+    function BindData() {
+        $j("#l_Msg").html("");
+        $j("#tbl_grid").empty();
+
+        var search = function () {
+            var s = window.location.search.substr(1),
+                p = s.split(/\&/),
+                l = p.length,
+                kv, r = {};
+            if (l === 0) { return false; }
+            while (l--) {
+                kv = p[l].split(/\=/);
+                r[kv[0]] = kv[1] || true;
+            }
+            return r;
+        }();
+
+        var FromDate = search["FromDate"];
+        if (FromDate == true) {
+            FromDate = ""
+        }
+        var ToDate = search["ToDate"];
+        if (ToDate == true) {
+            ToDate = ""
+        }
+
+        $j("#ToDate").html(ToDate)
+        $j("#FromDate").html(FromDate)
+        $j("#Employee").html(search["EmployeeName"].replace("%20", " ").replace("%20", " ").replace("%20", " ").replace("%20", " "))
+        $j("#Department").html(search["Department"])
+
+        $j.ajax({
+            async: false,
+            type: "Post",
+            url: "/Practical/EmployeeSalary/JsonListDetail",
+            data: "{'Id':'" + search["Id"] + "','FromDate':'" + "" + "','ToDate':'" + "" + "'}",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (Result) {
+                if (Result.Count != 0) {
+                    BindDataTable(Result.Data);
+                }
+                else {
+                    $j("#l_Msg").html("No Data Found ||");
+                }
+            },
+            error: function (response) {
+                alert(response.responseText);
+            }
+        });
+    }
+
+    function BindDataTable(Result) {
+        var table = $j('#tbl_grid').DataTable({
+            searching: false,
+            paging: false,
+            info: false,
+            destroy: true,
+            ordering: false,
+            deferRender: true,
+            data: Result,
+            columns: [
+                {
+                    "title": "Sr.No.",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Id",
+                },
+                {
+                    "title": "Date",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Date",
+                },
+                {
+                    "title": "Salary",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Salary",
+                },
+                {
+                    "title": "",
+                    "class": "bdr_v text_align_center",
+                    "data": "Es_Id",
+                    "render": function (data, type, full) {
+                        return '<a class="Delete" href="javascript:;" onclick="Delete(' + data + ')">Delete</a>'
+                    },
+                },
+            ],
+            "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+                $j("td:first", nRow).html(iDisplayIndex + 1);
+                return nRow;
+            },
+        });
+    }
+
+    function Delete(Id) {
+        if (confirm("Are you sure you want to delete record")) {
+            $j.ajax({
+                async: false,
+                type: "Post",
+                url: "/Practical/EmployeeSalary/Delete",
+                data: "{'Id':'" + Id + "'}",
+                contentType: "application/json; charset=utf-8",
+                dataType: "text",
+                success: function (Result) {
+                    BindData();
+                    $j("#l_Msg1").html(Result)
+                },
+                error: function (response) {
+                    alert(response.responseText);
+                }
+            });
+        }
+        else {
+            return false;
+        }
+    }
+</script>
